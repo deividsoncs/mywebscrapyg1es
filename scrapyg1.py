@@ -58,11 +58,16 @@ clean_notices = list()
 #itero todos containers que adquiri no meu request a página do G1-ES
 for container in containers:
     #pego título da notícia
-    title_container = container.findAll("p", {"class":"feed-post-body-title"})
-    title_notice=''
-    for tit in title_container:
-        title_notice = tit.text
-        title_notice = title_notice.replace("'", "\\'")
+    title_container = container.findAll("a", {"class":"feed-post-body-title"})
+    
+    #title_container = title_container.findAll("p", {"class":"_o"})
+    #print(title_container) 
+    
+    #title_notice=''
+    #for tit in title_container:
+    #    title_notice = tit.text
+    #    title_notice = title_notice.replace("'", "\\'")
+    #    print(tit)
 
     #pego o resumo
     abstract_container = []
@@ -75,9 +80,15 @@ for container in containers:
 
     #capturo o link da notícia
     link_container = container.findAll("a", {"class":"feed-post-link"})
+    
+    #adaptado pois mudaram o site do G1
+    #print(link_container[0].text)
+    notice_title = link_container[0].text
+    
     #retiro o conteúdo de href, sempre tenho somente um link nessa classe :P
     link_notice = link_container[0].get('href')
 
+    
     #(TODO)Adicionar função de entrar dentro do link e coletar notícia completa.
     #pego a url da notícia e leio sua página
     my_url=link_notice
