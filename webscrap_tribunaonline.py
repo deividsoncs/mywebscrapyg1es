@@ -2,10 +2,28 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sex Dez 17 16:06:00 2019
-Realiza a captura das notícias do site do Agazeta Minuto a Minuto e insere no banco de dados
+Realiza a captura das notícias do site do Tribuna Online e insere no banco de dados
+
+Site da tribunaonline não possui um hieraquia de pastas para as noticias, sempre concatena os domínio o link do href.
+Ou seja provavelmente os links não serão perenes porque alguma api os recebe e redireciona.
+
 MySQL
 http://dcalixtoblog.wordpress.com
 @author: calixto
+
+install 3.7 Debian:
+https://exitcode0.net/debian-9-how-to-upgrade-python-3-5-to-python-3-7/
+
+instalação do pip:
+apt-get update 
+apt-get install python3
+apt-get install python3-pip
+pip install beautifulsoup4
+pip install -U setuptools
+apt-get install python3-dev **default-libmysqlclient-dev**
+pip install mysqlclient
+
+
 """
 #importações
 from bs4 import BeautifulSoup as soup
@@ -28,7 +46,7 @@ def limparStr(campo):
         return '-XXX-'
 
 #url alvo inicial
-my_url = 'https://www.agazeta.com.br/minuto-a-minuto'
+my_url = 'https://tribunaonline.com.br/noticias'
 #classe noticia onde irei guardar temporariamente as notícias
 class Noticia:
     def __init__(self):
@@ -48,50 +66,44 @@ page_html = web_byte.decode('utf-8')
 page_soup = soup(page_html, "html.parser")
 
 #capturando a div com todas notícia
-containers = page_soup.findAll("div", {"class":"minuto-item"})
+containers = page_soup.findAll("div", {"class":"col-md-6 col-lg-8"})
 
 #(TODO) implementar try/catch
-
+rows = containers[0].findAll("div", {'class': 'row'})
 #lista de notícias já tratadas
 clean_notices = list()
+#print(containers)
 #itero todos containers que adquiri no meu request à página
-for container in containers:
+for container in rows:    
     #pego título da notícia
-    notice_title = container.find("h1", {"class":"titulo"})
-    #pego o resumo
-    abstract_container = []
-    abstract_container = container.findAll("p", {"class":"linha-fina"})
-    abstract_notice = ""
-    for abstract in abstract_container:
-        abstract_notice = abstract.text
-        abstract_notice = abstract_notice.replace("'", "\\'")
+    notice_title = container.find("h3")
+    print('----------------')    
+    print(notice_title.a.text)
+        
+    # não tenho resumo na tribuna online
+    # abstract_container = [] 
+    # abstract_container = container.findAll("p", {"class":"linha-fina"})
+    # abstract_notice = ""
+    # for abstract in abstract_container:
+    #     abstract_notice = abstract.text
+    #     abstract_notice = abstract_notice.replace("'", "\\'")
 
     #tags
-    tag_notice = container.find('label', {'class':'kicker'})
+    tag_notice = container.find('span', {'class':'text-uppercase'})
 
     #capturo o link da notícia
-    link_notice = container.a['href']    
-
-    #pegando hora e minuto bem específico do site da agazeta
-    # hora = 00
-    # minuto = 00
-    # tempo = container.find('h4', {'class':'tempo'})
-    # if (tempo != None):
-    #     hora = tempo.text[0:2]
-    #     minuto = tempo.text[-2:]
+    link_notice = 'https://tribunaonline.com.br' + notice_title.a['href']
+    print(link_notice)
 
     #preencho meu objeto notícia
     n = Noticia()
-    n.title = notice_title.text
-    n.abstract = abstract_notice
+    n.title = notice_title.a.text
+    n.abstract = 'tribunaonline não possui'
     n.content = 'Não implementado nesse site'
     n.link = link_notice
     n.tags = tag_notice.text if tag_notice != None else 'Não consegui obter tag'
 
-    #pego o dia como se fosse o de hj através do now no inicio do código e altero os minutos e hora
-    #pois o site minuto a a minuto não oferece a data, então tenho q supor que é a do dia
-    #o que pode dar um erro na virada do dia, mas....
-    #n.data = n.data.replace(hour=int(hora), minute=int(minuto))
+    #tribuna online só me da data se eu entrar no link, logo como acompanho de min a min insiro a data e hora do meu acesso
     dt = datetime.now()
     fuso = timezone('America/Bahia')
     n.data = dt.astimezone(fuso)
@@ -129,7 +141,7 @@ if (True):
             if (num_rows == 0):
                 sql = (
                     "INSERT INTO noticia(titulo, conteudo, link, tags, resumo, data, fonte, bot) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, 'AGAZETA MIN_A_MIN', 1)"
+                    "VALUES (%s, %s, %s, %s, %s, %s, 'TRIBUNA_ONLINE', 1)"
                 )
                 data = ( limparStr(clean_notices[i].title), limparStr(clean_notices[i].content), limparStr(clean_notices[i].link), limparStr(clean_notices[i].tags), limparStr(clean_notices[i].abstract), clean_notices[i].data)
                 cursor.execute(sql, data)
